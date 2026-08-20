@@ -1,4 +1,5 @@
 
+using LiveQuiz.API.Hubs;
 using LiveQuiz.Application.Interfaces;
 using LiveQuiz.Application.Services;
 using LiveQuiz.Infrastructure.Persistence;
@@ -12,6 +13,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
+
 
 builder.Services.AddCors(options =>
 {
@@ -20,7 +23,8 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins("http://localhost:5173")
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -60,11 +64,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
 app.UseHttpsRedirection();
 
 
 app.UseCors("ReactPolicy");
-app.MapControllers();
 
+app.MapControllers();
+app.MapHub<QuizHub>("/hubs/quiz");
 
 app.Run();

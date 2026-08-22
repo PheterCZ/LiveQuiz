@@ -1,6 +1,5 @@
 using LiveQuiz.Application.DTOs;
 using LiveQuiz.Application.Interfaces;
-using LiveQuiz.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LiveQuiz.API.Controllers
@@ -17,7 +16,8 @@ namespace LiveQuiz.API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Answer>> CreateAnswer(AnswerDto dto)
+        public async Task<ActionResult<AnswerDto>> CreateAnswer(
+            CreateAnswerDto dto)
         {
             var answer = await _answerService.CreateAnswerAsync(dto);
 
@@ -25,9 +25,11 @@ namespace LiveQuiz.API.Controllers
         }
 
         [HttpGet("question/{questionId}")]
-        public async Task<ActionResult<IReadOnlyList<Answer>>> GetAnswers(Guid questionId)
+        public async Task<ActionResult<IReadOnlyList<AnswerDto>>> GetAnswers(
+            Guid questionId)
         {
-            var answers = await _answerService.GetAnswersByQuestionIdAsync(questionId);
+            var answers =
+                await _answerService.GetAnswersByQuestionIdAsync(questionId);
 
             return Ok(answers);
         }

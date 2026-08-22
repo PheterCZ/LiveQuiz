@@ -1,7 +1,6 @@
 using LiveQuiz.API.Hubs;
 using LiveQuiz.Application.DTOs;
 using LiveQuiz.Application.Interfaces;
-using LiveQuiz.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
@@ -23,7 +22,7 @@ namespace LiveQuiz.API.Controllers
         }
 
         [HttpGet("quiz/{quizId}")]
-        public async Task<ActionResult<IReadOnlyList<Question>>> GetQuestions(
+        public async Task<ActionResult<IReadOnlyList<QuestionDto>>> GetQuestions(
             Guid quizId)
         {
             var questions =
@@ -32,8 +31,26 @@ namespace LiveQuiz.API.Controllers
             return Ok(questions);
         }
 
+        [HttpGet("quiz/{quizId}/order/{order}")]
+        public async Task<ActionResult<PlayerQuestionDto>> GetPlayerQuestion(
+            Guid quizId,
+            int order)
+        {
+            var question =
+                await _questionService.GetPlayerQuestionAsync(
+                    quizId,
+                    order);
+
+            if (question is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(question);
+        }
+
         [HttpPost]
-        public async Task<ActionResult<Question>> AddQuestion(
+        public async Task<ActionResult<QuestionDto>> AddQuestion(
             CreateQuestionDto dto)
         {
             var question =
@@ -41,7 +58,7 @@ namespace LiveQuiz.API.Controllers
 
             await _hubContext
                 .Clients
-                .Group(question.QuizId.ToString())
+                .Group(dto.QuizId.ToString())
                 .SendAsync("QuestionCreated", question);
 
             return Created("", question);

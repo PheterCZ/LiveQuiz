@@ -53,6 +53,10 @@ export async function deleteQuiz(id: string): Promise<void> {
         method: "DELETE"
     });
 
+    if (response.status === 404) {
+        return;
+    }
+
     if (!response.ok) {
         throw new Error("Failed to delete quiz.");
     }

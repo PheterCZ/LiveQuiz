@@ -23,6 +23,7 @@ namespace LiveQuiz.Application.Services
                 quiz.Title,
                 quiz.CreatedAt,
                 quiz.Description,
+                quiz.IsStarted,
                 Array.Empty<QuestionDto>()
             )).ToList();
         }
@@ -54,6 +55,7 @@ namespace LiveQuiz.Application.Services
                 quiz.Title,
                 quiz.CreatedAt,
                 quiz.Description,
+                quiz.IsStarted,
                 Array.Empty<QuestionDto>()
             );
         }
@@ -68,6 +70,31 @@ namespace LiveQuiz.Application.Services
             }
 
             await _repository.DeleteQuizAsync(quiz);
+
+            return true;
+        }
+
+        public async Task<bool> StartQuizAsync(Guid quizId, string hostToken)
+        {
+            var quiz = await _repository.GetQuizAsync(quizId);
+
+            if (quiz is null)
+            {
+                return false;
+            }
+
+            if (quiz.HostToken != hostToken)
+            {
+                return false;
+            }
+
+            if (quiz.IsStarted)
+            {
+                return false;
+            }
+
+            quiz.Start();
+            await _repository.UpdateQuizAsync(quiz);
 
             return true;
         }

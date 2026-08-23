@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import AddQuestionForm from "../components/AddQuestionForm";
 import QuestionList from "../components/QuestionList";
 import useQuizSession from "../hooks/useQuizSession";
@@ -6,9 +6,11 @@ import useQuizSession from "../hooks/useQuizSession";
 export default function QuizPage() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { id } = useParams();
 
     const isCreator =
-        new URLSearchParams(location.search).get("creator") === "true";
+        !!id &&
+        sessionStorage.getItem(`quiz-host-creator-${id}`) === "true";
 
     const {
         questions,
@@ -34,8 +36,9 @@ export default function QuizPage() {
         handleDeleteQuestion,
         handleDeleteQuiz,
         handleStartQuiz,
-        handleNextQuestion
-    } = useQuizSession(navigate);
+        handleNextQuestion,
+        isStartingQuiz
+    } = useQuizSession(navigate, isCreator);
 
     const currentQuestion =
         currentQuestionOrder !== null
@@ -84,9 +87,10 @@ export default function QuizPage() {
                         <button
                             type="button"
                             onClick={handleStartQuiz}
-                            className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white transition hover:bg-green-700"
+                            disabled={isStartingQuiz}
+                            className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-400"
                         >
-                            Start Quiz
+                            {isStartingQuiz ? "Starting..." : "Start Quiz"}
                         </button>
 
                         <button
@@ -187,6 +191,7 @@ export default function QuizPage() {
                                     <button
                                         key={answer.id}
                                         type="button"
+                                        disabled={isCreator}
                                         onClick={() =>
                                             handleSelectAnswer(
                                                 answer.id
@@ -197,6 +202,10 @@ export default function QuizPage() {
                                             answer.id
                                                 ? "bg-blue-600 text-white"
                                                 : "bg-white text-gray-800 hover:bg-gray-100"
+                                        } ${
+                                            isCreator
+                                                ? "cursor-not-allowed opacity-60"
+                                                : ""
                                         }`}
                                     >
                                         {answer.text}

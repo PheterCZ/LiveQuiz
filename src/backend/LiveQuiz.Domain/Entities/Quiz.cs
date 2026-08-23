@@ -12,6 +12,8 @@ public class Quiz
 
     public string HostToken { get; private set; } = string.Empty;
 
+    public bool IsStarted { get; private set; }
+
     private readonly List<Question> _questions = new();
 
     public IReadOnlyCollection<Question> Questions => _questions;
@@ -25,5 +27,16 @@ public class Quiz
         Description = description;
         CreatedAt = DateTime.UtcNow;
         HostToken = Guid.NewGuid().ToString();
+        IsStarted = false;
+    }
+
+    public void Start()
+    {
+        if (IsStarted)
+        {
+            throw new InvalidOperationException("Quiz is already started.");
+        }
+
+        IsStarted = true;
     }
 }

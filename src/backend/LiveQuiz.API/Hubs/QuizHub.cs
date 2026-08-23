@@ -119,6 +119,11 @@ namespace LiveQuiz.API.Hubs
                 );
             }
 
+            if (quiz.IsStarted)
+            {
+                return;
+            }
+
             var questions =
                 await _questionService
                     .GetAllQuestionsAsync(quizId);
@@ -132,6 +137,15 @@ namespace LiveQuiz.API.Hubs
             {
                 throw new HubException(
                     "Quiz has no questions."
+                );
+            }
+
+            var started = await _quizService.StartQuizAsync(quizId, hostToken);
+
+            if (!started)
+            {
+                throw new HubException(
+                    "Quiz could not be started."
                 );
             }
 

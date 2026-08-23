@@ -10,6 +10,7 @@ namespace LiveQuiz.Application.Services
         Task<IReadOnlyList<QuizDto>> GetAllQuizzesAsync();
         Task<QuizDto?> GetQuizAsync(Guid id);
         Task<bool> DeleteQuizAsync(Guid id);
+        Task<bool> StartQuizAsync(Guid quizId, string hostToken);
         Task<bool> ValidateHostTokenAsync(
             Guid quizId,
             string hostToken

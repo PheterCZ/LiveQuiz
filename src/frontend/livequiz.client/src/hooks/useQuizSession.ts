@@ -27,15 +27,18 @@ import {
 } from "../services/signalRService";
 
 export default function useQuizSession(
-    navigate: (to: string) => void
+    navigate: (to: string) => void,
+    providedIsCreator = false
 ) {
     const { id } = useParams();
     const location = useLocation();
 
     const isCreator =
-        new URLSearchParams(location.search).get(
-            "creator"
-        ) === "true";
+        providedIsCreator ||
+        (!!id &&
+            sessionStorage.getItem(
+                `quiz-host-creator-${id}`
+            ) === "true");
 
     const [questions, setQuestions] =
         useState<QuestionDto[]>([]);
@@ -64,6 +67,9 @@ export default function useQuizSession(
     const [isQuizCompleted, setIsQuizCompleted] =
         useState(false);
 
+    const [isStartingQuiz, setIsStartingQuiz] =
+        useState(false);
+
     const addQuestionToState = (
         question: QuestionDto
     ) => {
@@ -86,6 +92,10 @@ export default function useQuizSession(
     const handleSelectAnswer = async (
         answerId: string
     ) => {
+        if (isCreator) {
+            return;
+        }
+
         if (
             !id ||
             currentQuestionOrder === null
@@ -155,12 +165,23 @@ export default function useQuizSession(
             }
         };
 
+        const readHostToken = () => {
+            if (!id) {
+                return null;
+            }
+
+            const storageKey =
+                `quiz-host-token-${id}`;
+
+            return (
+                sessionStorage.getItem(storageKey) ??
+                localStorage.getItem(storageKey)
+            );
+        };
+
         const waitForHostToken =
             async (): Promise<string | null> => {
-                const storageKey =
-                    `quiz-host-token-${id}`;
-
-                const maxAttempts = 20;
+                const maxAttempts = 200;
                 const delay = 100;
 
                 for (
@@ -173,9 +194,7 @@ export default function useQuizSession(
                     }
 
                     const hostToken =
-                        sessionStorage.getItem(
-                            storageKey
-                        );
+                        readHostToken();
 
                     if (hostToken) {
                         return hostToken;
@@ -190,7 +209,7 @@ export default function useQuizSession(
                     );
                 }
 
-                return null;
+                return readHostToken();
             };
 
         const connectToQuiz = async () => {
@@ -320,9 +339,11 @@ export default function useQuizSession(
                         await waitForHostToken();
 
                     if (!hostToken) {
-                        console.error(
-                            "Host token could not be found."
-                        );
+                        if (!isCancelled) {
+                            console.error(
+                                "Host token could not be found."
+                            );
+                        }
 
                         return;
                     }
@@ -506,6 +527,9 @@ export default function useQuizSession(
             sessionStorage.removeItem(
                 `quiz-host-token-${id}`
             );
+            localStorage.removeItem(
+                `quiz-host-token-${id}`
+            );
 
             sessionStorage.removeItem(
                 `quiz-player-${id}`
@@ -521,12 +545,14 @@ export default function useQuizSession(
     };
 
     const handleStartQuiz = async () => {
-        if (!id) {
+        if (!id || isStartingQuiz) {
             return;
         }
 
         const hostToken =
             sessionStorage.getItem(
+                `quiz-host-token-${id}`
+            ) ?? localStorage.getItem(
                 `quiz-host-token-${id}`
             );
 
@@ -539,6 +565,8 @@ export default function useQuizSession(
         }
 
         try {
+            setIsStartingQuiz(true);
+
             const result =
                 await getQuestions(id);
 
@@ -575,6 +603,8 @@ export default function useQuizSession(
                 "Failed to start quiz:",
                 error
             );
+        } finally {
+            setIsStartingQuiz(false);
         }
     };
 
@@ -663,6 +693,7 @@ export default function useQuizSession(
         selectedAnswerId,
         answerResult,
         isQuizCompleted,
+        isStartingQuiz,
 
         handleSelectAnswer,
         handleFinishQuiz,

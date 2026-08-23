@@ -6,6 +6,7 @@ namespace LiveQuiz.Application.DTOs
         string Title,
         DateTime CreatedAt,
         string Description,
+        bool IsStarted,
         IReadOnlyCollection<QuestionDto> Questions 
     );
 }

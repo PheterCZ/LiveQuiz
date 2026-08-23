@@ -32,6 +32,13 @@ namespace LiveQuiz.Infrastructure.Repositories
         {
             return await _context.Quizzes.FindAsync(id);
         }
+        public async Task UpdateQuizAsync(Quiz quiz)
+        {
+            _context.Quizzes.Update(quiz);
+
+            await _context.SaveChangesAsync();
+        }
+
         public async Task DeleteQuizAsync(Quiz quiz)
         {
             _context.Quizzes.Remove(quiz);

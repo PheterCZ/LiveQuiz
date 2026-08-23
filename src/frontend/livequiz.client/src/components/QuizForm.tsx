@@ -55,9 +55,14 @@ export default function QuizForm() {
                 storageKey,
                 result.hostToken
             );
+            localStorage.setItem(
+                storageKey,
+                result.hostToken
+            );
 
             const savedHostToken =
-                sessionStorage.getItem(storageKey);
+                sessionStorage.getItem(storageKey) ??
+                localStorage.getItem(storageKey);
 
             console.log(
                 "Host token saved:",
@@ -66,16 +71,19 @@ export default function QuizForm() {
 
             if (!savedHostToken) {
                 throw new Error(
-                    "Failed to save host token to sessionStorage."
+                    "Failed to save host token to storage."
                 );
             }
 
             setTitle("");
             setDescription("");
 
-            navigate(
-                `/quiz/${result.id}?creator=true`
+            sessionStorage.setItem(
+                `quiz-host-creator-${result.id}`,
+                "true"
             );
+
+            navigate(`/quiz/${result.id}`);
         } catch (error) {
             console.error(
                 "Failed to create quiz:",

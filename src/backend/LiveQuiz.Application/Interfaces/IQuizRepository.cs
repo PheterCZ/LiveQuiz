@@ -10,6 +10,8 @@ namespace LiveQuiz.Application.Interfaces
 
         Task<Quiz?> GetQuizAsync(Guid id);
 
+        Task UpdateQuizAsync(Quiz quiz);
+
         Task DeleteQuizAsync(Quiz quiz);
     }
 }

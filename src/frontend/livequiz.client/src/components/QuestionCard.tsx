@@ -47,7 +47,7 @@ export default function QuestionCard({
                 <ul className="mt-3 space-y-2">
                     {question.answers.map((answer) => (
                         <li
-                            key={`${question.id}-${answer.text}`}
+                            key={answer.id ?? `${question.id}-${answer.text}`}
                             className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
                                 answer.isCorrect
                                     ? "border-emerald-200 bg-emerald-50 text-emerald-700"

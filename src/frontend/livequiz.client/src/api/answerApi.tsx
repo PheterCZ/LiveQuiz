@@ -1,4 +1,5 @@
 import type { AnswerDto } from "../types/AnswerDto";
+import type { CreateAnswerDto } from "../types/CreateAnswerDto";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -7,7 +8,7 @@ if (!API_URL) {
 }
 
 export async function createAnswer(
-    answer: AnswerDto
+    answer: CreateAnswerDto
 ): Promise<AnswerDto> {
     const response = await fetch(`${API_URL}/Answer`, {
         method: "POST",

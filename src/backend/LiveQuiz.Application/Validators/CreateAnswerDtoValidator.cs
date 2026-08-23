@@ -1,21 +1,19 @@
 
-
 using FluentValidation;
 using LiveQuiz.Application.DTOs;
 
 namespace LiveQuiz.Application.Validators
 {
-    public class AnswerDtoValidator : AbstractValidator<AnswerDto>
+    public class CreateAnswerDtoValidator : AbstractValidator<CreateAnswerDto>
     {
-        public AnswerDtoValidator()
+        public CreateAnswerDtoValidator()
         {
-            RuleFor(answer => answer.Id)
-                .NotEmpty().WithMessage("Id cannot be empty.");
+            RuleFor(answer => answer.QuestionId)
+                .NotEmpty().WithMessage("QuestionId cannot be empty.");
 
             RuleFor(answer => answer.Text)
                 .NotEmpty().WithMessage("Answer text cannot be empty")
                 .MaximumLength(100);
         }
-
     }
 }

@@ -1,5 +1,6 @@
 import type { QuestionDto } from "../types/QuestionDto";
 import type { CreateQuestionDto } from "../types/CreateQuestionDto";
+import type { PlayerQuestionDto } from "../types/PlayerQuestionDto";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -10,10 +11,29 @@ if (!API_URL) {
 export async function getQuestions(
     quizId: string
 ): Promise<QuestionDto[]> {
-    const response = await fetch(`${API_URL}/Question/quiz/${quizId}`);
+    const response = await fetch(
+        `${API_URL}/Question/quiz/${quizId}`
+    );
 
     if (!response.ok) {
         throw new Error(`Failed to get questions: ${response.status}`);
+    }
+
+    return await response.json();
+}
+
+export async function getPlayerQuestion(
+    quizId: string,
+    order: number
+): Promise<PlayerQuestionDto> {
+    const response = await fetch(
+        `${API_URL}/Question/quiz/${quizId}/order/${order}`
+    );
+
+    if (!response.ok) {
+        throw new Error(
+            `Failed to get player question: ${response.status}`
+        );
     }
 
     return await response.json();
@@ -37,12 +57,19 @@ export async function createQuestion(
     return await response.json();
 }
 
-export async function deleteQuestion(questionId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/Question/${questionId}`, {
-        method: "DELETE"
-    });
+export async function deleteQuestion(
+    questionId: string
+): Promise<void> {
+    const response = await fetch(
+        `${API_URL}/Question/${questionId}`,
+        {
+            method: "DELETE"
+        }
+    );
 
     if (!response.ok) {
-        throw new Error(`Failed to delete question: ${response.status}`);
+        throw new Error(
+            `Failed to delete question: ${response.status}`
+        );
     }
 }

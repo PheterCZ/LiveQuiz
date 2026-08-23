@@ -1,8 +1,8 @@
 
 namespace LiveQuiz.Application.DTOs
 {
-    public record AnswerDto(
-        Guid Id,
+    public record CreateAnswerDto(
+        Guid QuestionId,
         string Text,
         bool IsCorrect
     );

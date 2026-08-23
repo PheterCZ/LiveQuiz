@@ -29,7 +29,7 @@ export default function QuizList() {
                 {quizzes.map((quiz) => (
                     <Link
                         key={quiz.id}
-                        to={`/quiz/${quiz.id}`}
+                        to={`/quiz/${quiz.id}?creator=true`}
                         className="block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                         <h3 className="mb-2 text-xl font-semibold text-blue-600">

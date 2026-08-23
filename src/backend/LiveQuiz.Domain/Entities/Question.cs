@@ -8,14 +8,19 @@ namespace LiveQuiz.Domain.Entities
 
         public string Text { get; private set; } = string.Empty;
 
+        public int Order { get; private set; }
+
         private readonly List<Answer> _answers = new();
 
         public IReadOnlyCollection<Answer> Answers => _answers;
 
-        public Question(Guid quizId, string text)
+        private Question() { }
+
+        public Question(Guid quizId, string text, int order)
         {
             QuizId = quizId;
             Text = text;
+            Order = order;
         }
     }
 }

@@ -15,6 +15,8 @@ namespace LiveQuiz.Domain.Entities
 
         public bool IsCorrect { get; private set; }
 
+        private Answer() { }
+
         public Answer(Guid questionId, string text, bool isCorrect)
         {
             QuestionId = questionId;

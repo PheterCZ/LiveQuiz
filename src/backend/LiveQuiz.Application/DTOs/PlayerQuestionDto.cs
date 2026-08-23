@@ -1,10 +1,9 @@
-
 namespace LiveQuiz.Application.DTOs
 {
-    public record QuestionDto(
+    public record PlayerQuestionDto(
         Guid Id,
         string Text,
         int Order,
-        IReadOnlyCollection<AnswerDto> Answers
+        IReadOnlyCollection<PlayerAnswerDto> Answers
     );
 }

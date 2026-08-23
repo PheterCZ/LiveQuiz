@@ -1,5 +1,6 @@
 import type { QuizDto } from "../types/QuizDto";
 import type { CreateQuizDto } from "../types/CreateQuizDto";
+import type { CreatedQuizDto } from "../types/CreatedQuizDto";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -9,7 +10,7 @@ if (!API_URL) {
 
 export async function createQuiz(
     quiz: CreateQuizDto
-): Promise<QuizDto> {
+): Promise<CreatedQuizDto> {
     const response = await fetch(`${API_URL}/Quiz`, {
         method: "POST",
         headers: {
@@ -22,7 +23,7 @@ export async function createQuiz(
         throw new Error(`Failed to create quiz: ${response.status}`);
     }
 
-    const data: QuizDto = await response.json();
+    const data: CreatedQuizDto = await response.json();
 
     if (!data) {
         throw new Error("API returned no quiz");
@@ -32,9 +33,7 @@ export async function createQuiz(
 }
 
 export async function getQuizzes(): Promise<QuizDto[]> {
-    const response = await fetch(`${API_URL}/Quiz/all`, {
-        method: "GET"
-    });
+    const response = await fetch(`${API_URL}/Quiz/all`);
 
     if (!response.ok) {
         throw new Error(`Failed to get quizzes: ${response.status}`);
@@ -51,7 +50,7 @@ export async function getQuizzes(): Promise<QuizDto[]> {
 
 export async function deleteQuiz(id: string): Promise<void> {
     const response = await fetch(`${API_URL}/Quiz/${id}`, {
-        method: "DELETE",
+        method: "DELETE"
     });
 
     if (!response.ok) {

@@ -28,17 +28,16 @@ namespace LiveQuiz.Application.Services
         }
 
 
-        public async Task<QuizDto> CreateQuizServiceAsync(CreateQuizDto dto)
+        public async Task<CreatedQuizDto> CreateQuizServiceAsync(CreateQuizDto dto)
         {
             var quizEntity = new Quiz(dto.Title, dto.Description);
 
             await _repository.CreateQuizAsync(quizEntity);
-            return new QuizDto(
+
+            return new CreatedQuizDto(
                 quizEntity.Id,
-                quizEntity.Title,
-                quizEntity.CreatedAt,
-                quizEntity.Description,
-                Array.Empty<QuestionDto>());
+                quizEntity.HostToken
+            );
         }
 
         public async Task<QuizDto?> GetQuizAsync(Guid id)
@@ -71,6 +70,20 @@ namespace LiveQuiz.Application.Services
             await _repository.DeleteQuizAsync(quiz);
 
             return true;
+        }
+
+        public async Task<bool> ValidateHostTokenAsync(
+            Guid quizId,
+            string hostToken)
+        {
+            var quiz = await _repository.GetQuizAsync(quizId);
+
+            if (quiz is null)
+            {
+                return false;
+            }
+
+            return quiz.HostToken == hostToken;
         }
     }
 }

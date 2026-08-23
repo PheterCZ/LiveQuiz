@@ -1,14 +1,16 @@
-
 using LiveQuiz.Application.DTOs;
-using LiveQuiz.Domain.Entities;
 
 namespace LiveQuiz.Application.Interfaces
 {
     public interface IQuestionService
     {
-        Task<Question> AddQuestionServiceAsync(CreateQuestionDto dto);
-        Task<IReadOnlyList<Question>> GetAllQuestionsAsync(Guid quizId);
-        Task<bool> DeleteQuestionAsync(Guid id);
+        Task<QuestionDto> AddQuestionServiceAsync(CreateQuestionDto dto);
+        Task<IReadOnlyList<QuestionDto>> GetAllQuestionsAsync(Guid quizId);
 
+        Task<PlayerQuestionDto?> GetPlayerQuestionAsync(
+            Guid quizId,
+            int order
+        );
+        Task<bool> DeleteQuestionAsync(Guid id);
     }
 }

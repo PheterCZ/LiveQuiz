@@ -1,4 +1,4 @@
-
+using LiveQuiz.API.Exceptions;
 using LiveQuiz.API.Hubs;
 using LiveQuiz.Application.Interfaces;
 using LiveQuiz.Application.Services;
@@ -7,6 +7,7 @@ using LiveQuiz.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 DotNetEnv.Env.Load("../../../.env");
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
@@ -15,15 +16,16 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     {
-        opts.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        opts.JsonSerializerOptions.PropertyNamingPolicy =
+            System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 
 builder.Services.AddSignalR()
     .AddJsonProtocol(opts =>
     {
-        opts.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        opts.PayloadSerializerOptions.PropertyNamingPolicy =
+            System.Text.Json.JsonNamingPolicy.CamelCase;
     });
-
 
 builder.Services.AddCors(options =>
 {
@@ -40,6 +42,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddProblemDetails();
+
+builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 
@@ -54,21 +61,30 @@ builder.Services.AddSingleton<IQuizSessionService, QuizSessionService>();
 var connectionStringTemplate = builder.Configuration
     .GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
-        "Connection string 'DefaultConnection' was not found.");
+        "Connection string 'DefaultConnection' was not found."
+    );
 
 var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD")
     ?? throw new InvalidOperationException(
-        "Environment variable 'DB_PASSWORD' was not found.");
+        "Environment variable 'DB_PASSWORD' was not found."
+    );
 
 var connectionString = connectionStringTemplate.Replace(
     "${DB_PASSWORD}",
-    dbPassword);
+    dbPassword
+);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString)
+);
 
-    
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>();
+
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
@@ -76,9 +92,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
 app.UseHttpsRedirection();
-
 
 app.UseCors("ReactPolicy");
 

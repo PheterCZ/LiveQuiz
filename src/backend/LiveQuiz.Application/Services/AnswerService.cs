@@ -1,17 +1,21 @@
-
 using LiveQuiz.Application.DTOs;
 using LiveQuiz.Application.Interfaces;
 using LiveQuiz.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace LiveQuiz.Application.Services
 {
     public class AnswerService : IAnswerService
     {
         private readonly IAnswerRepository _repository;
+        private readonly ILogger<AnswerService> _logger;
 
-        public AnswerService(IAnswerRepository repository)
+        public AnswerService(
+            IAnswerRepository repository,
+            ILogger<AnswerService> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         public async Task<AnswerDto> CreateAnswerAsync(CreateAnswerDto dto)
@@ -23,6 +27,12 @@ namespace LiveQuiz.Application.Services
             );
 
             await _repository.CreateAnswerAsync(answer);
+
+            _logger.LogInformation(
+                "Answer {AnswerId} created for question {QuestionId}.",
+                answer.Id,
+                dto.QuestionId
+            );
 
             return new AnswerDto(
                 answer.Id,

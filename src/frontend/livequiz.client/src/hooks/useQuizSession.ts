@@ -1,12 +1,10 @@
-
 import {
     useEffect,
     useState,
     type FormEvent
 } from "react";
 import {
-    useParams,
-    useLocation
+    useParams
 } from "react-router-dom";
 import { createAnswer } from "../api/answerApi";
 import {
@@ -26,18 +24,44 @@ import {
     submitAnswer
 } from "../services/signalRService";
 
+export type LeaderboardEntry = {
+    position: number;
+    playerName: string;
+    score: number;
+};
+
+const getTabScopedStorageKey = (
+    prefix: string,
+    quizId: string
+) => {
+    const tabId =
+        sessionStorage.getItem(
+            "livequiz-tab-id"
+        ) ??
+        crypto.randomUUID();
+
+    sessionStorage.setItem(
+        "livequiz-tab-id",
+        tabId
+    );
+
+    return `${prefix}-${quizId}-${tabId}`;
+};
+
 export default function useQuizSession(
     navigate: (to: string) => void,
     providedIsCreator = false
 ) {
     const { id } = useParams();
-    const location = useLocation();
 
     const isCreator =
         providedIsCreator ||
         (!!id &&
             sessionStorage.getItem(
-                `quiz-host-creator-${id}`
+                getTabScopedStorageKey(
+                    "quiz-host-creator",
+                    id
+                )
             ) === "true");
 
     const [questions, setQuestions] =
@@ -70,23 +94,97 @@ export default function useQuizSession(
     const [isStartingQuiz, setIsStartingQuiz] =
         useState(false);
 
+    const [playerName, setPlayerName] =
+        useState<string | null>(null);
+
+    const [isJoiningQuiz, setIsJoiningQuiz] =
+        useState(false);
+
+    const [score, setScore] =
+        useState(0);
+
+    const [leaderboard, setLeaderboard] =
+        useState<LeaderboardEntry[]>([]);
+
     const addQuestionToState = (
         question: QuestionDto
     ) => {
         setQuestions((current) => {
-            const alreadyExists = current.some(
-                (currentQuestion) =>
-                    currentQuestion.id === question.id
-            );
+            const alreadyExists =
+                current.some(
+                    (currentQuestion) =>
+                        currentQuestion.id ===
+                        question.id
+                );
 
             if (alreadyExists) {
                 return current;
             }
 
-            return [...current, question].sort(
-                (a, b) => a.order - b.order
+            return [
+                ...current,
+                question
+            ].sort(
+                (a, b) =>
+                    a.order - b.order
             );
         });
+    };
+
+    const handleJoinQuiz = async (
+        name: string
+    ) => {
+        if (!id || isCreator) {
+            return;
+        }
+
+        const trimmedName =
+            name.trim();
+
+        if (!trimmedName) {
+            return;
+        }
+
+        try {
+            setIsJoiningQuiz(true);
+
+            sessionStorage.setItem(
+                getTabScopedStorageKey(
+                    "quiz-player-name",
+                    id
+                ),
+                trimmedName
+            );
+
+            await joinQuiz(
+                id,
+                trimmedName
+            );
+
+            setPlayerName(
+                trimmedName
+            );
+
+            console.log(
+                "Joined quiz as player:",
+                id,
+                trimmedName
+            );
+        } catch (error) {
+            sessionStorage.removeItem(
+                getTabScopedStorageKey(
+                    "quiz-player-name",
+                    id
+                )
+            );
+
+            console.error(
+                "Failed to join quiz:",
+                error
+            );
+        } finally {
+            setIsJoiningQuiz(false);
+        }
     };
 
     const handleSelectAnswer = async (
@@ -103,18 +201,22 @@ export default function useQuizSession(
             return;
         }
 
-        const currentQuestion = questions.find(
-            (question) =>
-                question.order ===
-                currentQuestionOrder
-        );
+        const currentQuestion =
+            questions.find(
+                (question) =>
+                    question.order ===
+                    currentQuestionOrder
+            );
 
         if (!currentQuestion) {
             return;
         }
 
         try {
-            setSelectedAnswerId(answerId);
+            setSelectedAnswerId(
+                answerId
+            );
+
             setAnswerResult(null);
 
             await submitAnswer(
@@ -123,8 +225,13 @@ export default function useQuizSession(
                 answerId
             );
         } catch (error) {
-            setSelectedAnswerId(null);
-            setAnswerResult(null);
+            setSelectedAnswerId(
+                null
+            );
+
+            setAnswerResult(
+                null
+            );
 
             console.error(
                 "Failed to submit answer:",
@@ -139,6 +246,7 @@ export default function useQuizSession(
         }
 
         let isCancelled = false;
+        let nextQuestionTimeout: number | undefined;
 
         const loadQuestions = async () => {
             try {
@@ -166,51 +274,16 @@ export default function useQuizSession(
         };
 
         const readHostToken = () => {
-            if (!id) {
-                return null;
-            }
-
             const storageKey =
-                `quiz-host-token-${id}`;
+                getTabScopedStorageKey(
+                    "quiz-host-token",
+                    id
+                );
 
-            return (
-                sessionStorage.getItem(storageKey) ??
-                localStorage.getItem(storageKey)
+            return sessionStorage.getItem(
+                storageKey
             );
         };
-
-        const waitForHostToken =
-            async (): Promise<string | null> => {
-                const maxAttempts = 200;
-                const delay = 100;
-
-                for (
-                    let attempt = 0;
-                    attempt < maxAttempts;
-                    attempt++
-                ) {
-                    if (isCancelled) {
-                        return null;
-                    }
-
-                    const hostToken =
-                        readHostToken();
-
-                    if (hostToken) {
-                        return hostToken;
-                    }
-
-                    await new Promise<void>(
-                        (resolve) =>
-                            setTimeout(
-                                resolve,
-                                delay
-                            )
-                    );
-                }
-
-                return readHostToken();
-            };
 
         const connectToQuiz = async () => {
             try {
@@ -220,7 +293,9 @@ export default function useQuizSession(
                     return;
                 }
 
-                connection.off("UserJoined");
+                connection.off(
+                    "UserJoined"
+                );
 
                 connection.on(
                     "UserJoined",
@@ -242,7 +317,9 @@ export default function useQuizSession(
 
                 connection.on(
                     "QuestionCreated",
-                    (question: QuestionDto) => {
+                    (
+                        question: QuestionDto
+                    ) => {
                         console.log(
                             "Question created:",
                             question
@@ -266,23 +343,41 @@ export default function useQuizSession(
                             order
                         );
 
-                        setCurrentQuestionOrder(
-                            order
-                        );
+                        if (
+                            nextQuestionTimeout
+                        ) {
+                            window.clearTimeout(
+                                nextQuestionTimeout
+                            );
+                        }
 
-                        setSelectedAnswerId(
-                            null
-                        );
+                        nextQuestionTimeout =
+                            window.setTimeout(
+                                () => {
+                                    setCurrentQuestionOrder(
+                                        order
+                                    );
 
-                        setAnswerResult(null);
+                                    setSelectedAnswerId(
+                                        null
+                                    );
 
-                        setIsQuizCompleted(
-                            false
-                        );
+                                    setAnswerResult(
+                                        null
+                                    );
+
+                                    setIsQuizCompleted(
+                                        false
+                                    );
+                                },
+                                1500
+                            );
                     }
                 );
 
-                connection.off("QuizStarted");
+                connection.off(
+                    "QuizStarted"
+                );
 
                 connection.on(
                     "QuizStarted",
@@ -300,11 +395,16 @@ export default function useQuizSession(
                             null
                         );
 
-                        setAnswerResult(null);
+                        setAnswerResult(
+                            null
+                        );
 
                         setIsQuizCompleted(
                             false
                         );
+
+                        setScore(0);
+                        setLeaderboard([]);
                     }
                 );
 
@@ -316,12 +416,14 @@ export default function useQuizSession(
                     "AnswerSubmitted",
                     (
                         answerId: string,
-                        isCorrect: boolean
+                        isCorrect: boolean,
+                        currentScore: number
                     ) => {
                         console.log(
                             "Answer submitted:",
                             answerId,
-                            isCorrect
+                            isCorrect,
+                            currentScore
                         );
 
                         setSelectedAnswerId(
@@ -331,12 +433,40 @@ export default function useQuizSession(
                         setAnswerResult(
                             isCorrect
                         );
+
+                        setScore(
+                            currentScore
+                        );
+                    }
+                );
+
+                connection.off(
+                    "QuizFinished"
+                );
+
+                connection.on(
+                    "QuizFinished",
+                    (
+                        result: LeaderboardEntry[]
+                    ) => {
+                        console.log(
+                            "Quiz finished:",
+                            result
+                        );
+
+                        setLeaderboard(
+                            result
+                        );
+
+                        setIsQuizCompleted(
+                            true
+                        );
                     }
                 );
 
                 if (isCreator) {
                     const hostToken =
-                        await waitForHostToken();
+                        readHostToken();
 
                     if (!hostToken) {
                         if (!isCancelled) {
@@ -365,34 +495,32 @@ export default function useQuizSession(
                     return;
                 }
 
-                const storageKey =
-                    `quiz-player-${id}`;
-
-                let playerId =
+                const savedPlayerName =
                     sessionStorage.getItem(
-                        storageKey
+                        getTabScopedStorageKey(
+                            "quiz-player-name",
+                            id
+                        )
                     );
 
-                if (!playerId) {
-                    playerId =
-                        crypto.randomUUID();
+                if (savedPlayerName) {
+                    await joinQuiz(
+                        id,
+                        savedPlayerName
+                    );
 
-                    sessionStorage.setItem(
-                        storageKey,
-                        playerId
+                    if (!isCancelled) {
+                        setPlayerName(
+                            savedPlayerName
+                        );
+                    }
+
+                    console.log(
+                        "Joined quiz as player:",
+                        id,
+                        savedPlayerName
                     );
                 }
-
-                await joinQuiz(
-                    id,
-                    playerId
-                );
-
-                console.log(
-                    "Joined quiz as player:",
-                    id,
-                    playerId
-                );
             } catch (error) {
                 if (!isCancelled) {
                     console.error(
@@ -409,16 +537,36 @@ export default function useQuizSession(
         return () => {
             isCancelled = true;
 
-            connection.off("UserJoined");
+            if (
+                nextQuestionTimeout
+            ) {
+                window.clearTimeout(
+                    nextQuestionTimeout
+                );
+            }
+
+            connection.off(
+                "UserJoined"
+            );
+
             connection.off(
                 "QuestionCreated"
             );
+
             connection.off(
                 "QuestionChanged"
             );
-            connection.off("QuizStarted");
+
+            connection.off(
+                "QuizStarted"
+            );
+
             connection.off(
                 "AnswerSubmitted"
+            );
+
+            connection.off(
+                "QuizFinished"
             );
         };
     }, [id, isCreator]);
@@ -442,7 +590,9 @@ export default function useQuizSession(
                     text: questionText
                 });
 
-            addQuestionToState(result);
+            addQuestionToState(
+                result
+            );
 
             setQuestionText("");
         } catch (error) {
@@ -465,26 +615,31 @@ export default function useQuizSession(
                 await createAnswer({
                     questionId,
                     text: answerText,
-                    isCorrect: answerIsCorrect
+                    isCorrect:
+                        answerIsCorrect
                 });
 
             setQuestions((current) =>
-                current.map((question) =>
-                    question.id === questionId
-                        ? {
-                              ...question,
-                              answers: [
-                                  ...question.answers,
-                                  result
-                              ]
-                          }
-                        : question
+                current.map(
+                    (question) =>
+                        question.id ===
+                        questionId
+                            ? {
+                                  ...question,
+                                  answers: [
+                                      ...question.answers,
+                                      result
+                                  ]
+                              }
+                            : question
                 )
             );
 
             setAnswerText("");
             setAnswerIsCorrect(false);
-            setAnswerQuestionId(null);
+            setAnswerQuestionId(
+                null
+            );
         } catch (error) {
             console.error(
                 "Failed to create answer:",
@@ -525,14 +680,17 @@ export default function useQuizSession(
             await deleteQuiz(id);
 
             sessionStorage.removeItem(
-                `quiz-host-token-${id}`
-            );
-            localStorage.removeItem(
-                `quiz-host-token-${id}`
+                getTabScopedStorageKey(
+                    "quiz-host-token",
+                    id
+                )
             );
 
             sessionStorage.removeItem(
-                `quiz-player-${id}`
+                getTabScopedStorageKey(
+                    "quiz-player-name",
+                    id
+                )
             );
 
             navigate("/");
@@ -551,9 +709,10 @@ export default function useQuizSession(
 
         const hostToken =
             sessionStorage.getItem(
-                `quiz-host-token-${id}`
-            ) ?? localStorage.getItem(
-                `quiz-host-token-${id}`
+                getTabScopedStorageKey(
+                    "quiz-host-token",
+                    id
+                )
             );
 
         if (!hostToken) {
@@ -565,7 +724,9 @@ export default function useQuizSession(
         }
 
         try {
-            setIsStartingQuiz(true);
+            setIsStartingQuiz(
+                true
+            );
 
             const result =
                 await getQuestions(id);
@@ -581,7 +742,8 @@ export default function useQuizSession(
             );
 
             if (
-                loadedQuestions.length === 0
+                loadedQuestions.length ===
+                0
             ) {
                 console.error(
                     "Cannot start quiz without questions."
@@ -604,70 +766,77 @@ export default function useQuizSession(
                 error
             );
         } finally {
-            setIsStartingQuiz(false);
+            setIsStartingQuiz(
+                false
+            );
         }
     };
 
-    const handleNextQuestion = async () => {
-        if (!id) {
-            return;
-        }
-
-        const current =
-            currentQuestionOrder;
-
-        let nextOrder: number;
-
-        if (current === null) {
-            nextOrder =
-                questions.length > 0
-                    ? questions[0].order
-                    : 1;
-        } else {
-            const sortedOrders =
-                questions
-                    .map(
-                        (question) =>
-                            question.order
-                    )
-                    .sort(
-                        (a, b) => a - b
-                    );
-
-            const currentIndex =
-                sortedOrders.indexOf(
-                    current
-                );
-
-            if (
-                currentIndex >= 0 &&
-                currentIndex <
-                    sortedOrders.length - 1
-            ) {
-                nextOrder =
-                    sortedOrders[
-                        currentIndex + 1
-                    ];
-            } else {
+    const handleNextQuestion =
+        async () => {
+            if (!id) {
                 return;
             }
-        }
 
-        try {
-            await nextQuestion(
-                id,
-                nextOrder
-            );
-        } catch (error) {
-            console.error(
-                "Failed to move to next question:",
-                error
-            );
-        }
-    };
+            const current =
+                currentQuestionOrder;
+
+            let nextOrder: number;
+
+            if (current === null) {
+                nextOrder =
+                    questions.length > 0
+                        ? questions[0].order
+                        : 1;
+            } else {
+                const sortedOrders =
+                    questions
+                        .map(
+                            (question) =>
+                                question.order
+                        )
+                        .sort(
+                            (a, b) =>
+                                a - b
+                        );
+
+                const currentIndex =
+                    sortedOrders.indexOf(
+                        current
+                    );
+
+                if (
+                    currentIndex >= 0 &&
+                    currentIndex <
+                        sortedOrders.length -
+                            1
+                ) {
+                    nextOrder =
+                        sortedOrders[
+                            currentIndex + 1
+                        ];
+                } else {
+                    return;
+                }
+            }
+
+            try {
+                await nextQuestion(
+                    id,
+                    nextOrder
+                );
+            } catch (error) {
+                console.error(
+                    "Failed to move to next question:",
+                    error
+                );
+            }
+        };
 
     const handleFinishQuiz = () => {
-        setIsQuizCompleted(true);
+        setIsQuizCompleted(
+            true
+        );
     };
 
     const isQuizStarted =
@@ -677,6 +846,10 @@ export default function useQuizSession(
         questions,
         currentQuestionOrder,
         isQuizStarted,
+
+        playerName,
+        isJoiningQuiz,
+        handleJoinQuiz,
 
         questionText,
         setQuestionText,
@@ -692,6 +865,10 @@ export default function useQuizSession(
 
         selectedAnswerId,
         answerResult,
+
+        score,
+        leaderboard,
+
         isQuizCompleted,
         isStartingQuiz,
 

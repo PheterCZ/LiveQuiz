@@ -1,4 +1,3 @@
-
 import {
     HubConnection,
     HubConnectionBuilder,
@@ -6,20 +5,26 @@ import {
     LogLevel
 } from "@microsoft/signalr";
 
-const SIGNALR_URL = import.meta.env.VITE_SIGNALR_URL;
+const SIGNALR_URL =
+    import.meta.env.VITE_SIGNALR_URL;
 
 if (!SIGNALR_URL) {
-    throw new Error("VITE_SIGNALR_URL is not defined");
+    throw new Error(
+        "VITE_SIGNALR_URL is not defined"
+    );
 }
 
 export const connection: HubConnection =
     new HubConnectionBuilder()
         .withUrl(SIGNALR_URL)
-        .configureLogging(LogLevel.Information)
+        .configureLogging(
+            LogLevel.Information
+        )
         .withAutomaticReconnect()
         .build();
 
-let connectionPromise: Promise<void> | null = null;
+let connectionPromise:
+    Promise<void> | null = null;
 
 export async function startSignalR(): Promise<void> {
     if (

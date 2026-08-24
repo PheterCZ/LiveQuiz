@@ -2,6 +2,24 @@ import { useState, type FormEvent } from "react";
 import { createQuiz } from "../api/quizApi";
 import { useNavigate } from "react-router-dom";
 
+const getTabScopedStorageKey = (
+    prefix: string,
+    quizId: string
+) => {
+    const tabId =
+        sessionStorage.getItem(
+            "livequiz-tab-id"
+        ) ??
+        crypto.randomUUID();
+
+    sessionStorage.setItem(
+        "livequiz-tab-id",
+        tabId
+    );
+
+    return `${prefix}-${quizId}-${tabId}`;
+};
+
 export default function QuizForm() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -49,20 +67,18 @@ export default function QuizForm() {
             }
 
             const storageKey =
-                `quiz-host-token-${result.id}`;
+                getTabScopedStorageKey(
+                    "quiz-host-token",
+                    result.id
+                );
 
             sessionStorage.setItem(
                 storageKey,
                 result.hostToken
             );
-            localStorage.setItem(
-                storageKey,
-                result.hostToken
-            );
 
             const savedHostToken =
-                sessionStorage.getItem(storageKey) ??
-                localStorage.getItem(storageKey);
+                sessionStorage.getItem(storageKey);
 
             console.log(
                 "Host token saved:",
@@ -79,7 +95,10 @@ export default function QuizForm() {
             setDescription("");
 
             sessionStorage.setItem(
-                `quiz-host-creator-${result.id}`,
+                getTabScopedStorageKey(
+                    "quiz-host-creator",
+                    result.id
+                ),
                 "true"
             );
 

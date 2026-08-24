@@ -1,7 +1,7 @@
 
 using LiveQuiz.Application.DTOs;
 
-namespace LiveQuiz.Application.Services
+namespace LiveQuiz.Application.Interfaces
 {
     public interface IQuizService
     {

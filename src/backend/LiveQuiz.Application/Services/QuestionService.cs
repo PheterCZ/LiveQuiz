@@ -104,5 +104,58 @@ namespace LiveQuiz.Application.Services
 
             return true;
         }
+
+        public async Task<int?> GetFirstQuestionOrderAsync(Guid quizId)
+        {
+            var questions = await _repository.GetQuestionsByQuizIdAsync(quizId);
+            
+            if (questions.Count == 0)
+            {
+                return null;
+            }
+
+            return questions
+                .OrderBy(q => q.Order)
+                .Select(q => q.Order)
+                .FirstOrDefault();
+        }
+
+        public async Task<int?> GetNextQuestionOrderAsync(
+            Guid quizId,
+            int currentOrder)
+        {
+            var questions = await _repository.GetQuestionsByQuizIdAsync(quizId);
+            
+            var nextOrder = questions
+                .Where(q => q.Order > currentOrder)
+                .OrderBy(q => q.Order)
+                .Select(q => q.Order)
+                .FirstOrDefault();
+
+            return nextOrder == 0 ? null : nextOrder;
+        }
+
+        public async Task<QuestionDto?> GetQuestionByIdAsync(Guid questionId)
+        {
+            var question = await _repository.GetQuestionByIdAsync(questionId);
+
+            if (question is null)
+            {
+                return null;
+            }
+
+            return new QuestionDto(
+                question.Id,
+                question.Text,
+                question.Order,
+                question.Answers
+                    .Select(a => new AnswerDto(
+                        a.Id,
+                        a.Text,
+                        a.IsCorrect
+                    ))
+                    .ToList()
+            );
+        }
     }
 }

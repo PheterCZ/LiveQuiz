@@ -1,4 +1,5 @@
 using LiveQuiz.Application.DTOs;
+using LiveQuiz.Application.Interfaces;
 using LiveQuiz.Application.Services;
 using LiveQuiz.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;

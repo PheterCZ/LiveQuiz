@@ -12,5 +12,14 @@ namespace LiveQuiz.Application.Interfaces
             int order
         );
         Task<bool> DeleteQuestionAsync(Guid id);
+
+        Task<int?> GetFirstQuestionOrderAsync(Guid quizId);
+
+        Task<int?> GetNextQuestionOrderAsync(
+            Guid quizId,
+            int currentOrder
+        );
+
+        Task<QuestionDto?> GetQuestionByIdAsync(Guid questionId);
     }
 }

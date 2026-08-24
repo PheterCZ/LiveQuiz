@@ -47,6 +47,7 @@ builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 builder.Services.AddScoped<IAnswerService, AnswerService>();
 builder.Services.AddScoped<IAnswerRepository, AnswerRepository>();
 
+builder.Services.AddSingleton<IQuizSessionService, QuizSessionService>();
 
 var connectionStringTemplate = builder.Configuration
     .GetConnectionString("DefaultConnection")

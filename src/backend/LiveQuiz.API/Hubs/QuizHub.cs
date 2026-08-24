@@ -141,7 +141,7 @@ namespace LiveQuiz.API.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        // Validation helpers
+
         private void ValidatePlayerName(string playerName)
         {
             if (string.IsNullOrWhiteSpace(playerName))
